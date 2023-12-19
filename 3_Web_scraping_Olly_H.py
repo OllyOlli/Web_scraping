@@ -1,4 +1,4 @@
-"""Závěrečný projekt prověří tvé znalosti nejenom z posledních lekcí, ale z celého kurzu. Tvým úkolem bude vytvořit scraper výsledků voleb z roku 2017, který vytáhne data přímo z webu.
+"""Tvým úkolem bude vytvořit scraper výsledků voleb z roku 2017, který vytáhne data přímo z webu.
 Napiš takový skript, který vybere jakýkoliv územní celek z tohoto odkazu Např. X u Benešov odkazuje sem . Z tohoto odkazu chcete vyscrapovat výsledky hlasování pro všechny obce (resp. pomocí X ve sloupci Výběr okrsku).
 Jak postupovat
 Na svém počítači si vytvoříte vlastní virtuální prostředí (speciálně pro tento úkol)
