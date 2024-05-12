@@ -22,45 +22,44 @@ platné hlasy
 kandidující strany
 """
 
+import sys  # Importování modulu sys pro práci s argumenty příkazové řádky
+import requests as r  # Importování modulu requests jako r pro získání webového obsahu
+from bs4 import BeautifulSoup  # Importování modulu BeautifulSoup pro analýzu HTML
+import pandas as pd  # Importování modulu pandas pro manipulaci s daty
+from typing import List  # Importování typu List pro typovou kontrolu
+import csv  # Importování modulu csv pro práci s CSV soubory
 
-import sys
-import requests as r
-from bs4 import BeautifulSoup
-import pandas as pd
-from typing import List
-import csv
-
-#passing arguments to variables and checking the entry
+# Předání argumentů proměnným a kontrola vstupu
 arg1 = (sys.argv[1])
 arg2 = (sys.argv[2])
 if len(sys.argv) != 3 or arg2.split('.')[1] != 'csv' or r.get(arg1).status_code != 200:
-    raise ValueError('Enter the parameter url and the title of csv. Do not exceed or exchange the parameters.')
+    raise ValueError('Zadejte parametr URL a název CSV. Nepřekračujte nebo nevyměňujte parametry.')
 else:
-    #getting content from html based on argv
+    # Získání obsahu z HTML na základě argumentu
     response = r.get(arg1)
     soup = BeautifulSoup(response.text, 'html.parser')
-    #getting the codes of cities from html
+    # Získání kódů měst z HTML
     numbers = soup.select('td.cislo')
     numbers_city = [number.find('a').text for number in numbers]
-    #getting the url for detailed info for each city
+    # Získání URL pro podrobnosti o každém městě
     hrefs = soup.select('td.cislo')
     hrefs_city = [href.find('a')['href'] for href in hrefs]
-    #getting the cities from html
+    # Získání měst z HTML
     titles = soup.select('td.overflow_name')
     titles_city = []
     for title in titles:
         city = [ele.text.strip() for ele in title]
         titles_city.append([ele for ele in title if ele])
 
-    #creating empty lists for further use
+    # Vytvoření prázdných seznamů pro další použití
     df = []
     votes_by_party = []
-    #iterating trought every city, code of city and link to detail of url for each city
+    # Procházení každého města, kódu města a odkazu na detail pro každé město
     for href, title, number in zip(hrefs_city, titles_city, numbers_city):
-        #getting content from the web for each city
+        # Získání obsahu z webu pro každé město
         response2 = r.get(f"https://volby.cz/pls/ps2017nss/{href}")
         soup2 = BeautifulSoup(response2.text, 'html.parser')
-        #picking up information about number of electors, envelopes, valid votes and political party
+        # Získání informací o počtu voličů, obálek, platných hlasů a politických stranách
         electors = soup2.select('td.cislo')[3].text
         envelopes = soup2.select('td.cislo')[4].text
         valid_votes = soup2.select('td.cislo')[7].text
@@ -70,12 +69,12 @@ else:
         for party in parties:
             party_pol = [ele.text.strip() for ele in party]
             parties_city.append([ele for ele in party if ele])
-        l =(int(len(parties_city)))*3+10
-        #picking up all of the votes in the city detail
+        l = (int(len(parties_city))) * 3 + 10
+        # Získání všech hlasů v detailu města
         for i in list(range(10, l, 3)):
             votes_by_party.append(soup2.select('td.cislo')[i].text)
 
-        #passing the information to dictionary
+        # Předání informací do slovníku
         df_detail = {
             'Number': number,
             'City': title,
@@ -84,10 +83,10 @@ else:
             'Valid votes': valid_votes
         }
         df.append(df_detail)
-        #converting the dictionary into dataframe
+        # Převedení slovníku na dataframe
         df_1 = pd.DataFrame(df)
 
-    #selecting unique political parties
+    # Výběr unikátních politických stran
     parties_unique = soup2.select('td.overflow_name')
     parties_city_unique = []
     for party_un in parties_unique:
@@ -95,28 +94,27 @@ else:
         parties_city_unique.append([ele for ele in party_un if ele])
     w = pd.DataFrame(parties_city_unique)
 
-
-    #creating a dictionary for political parties
-    dict_temp = dict.fromkeys(list(range(0,len(w))))
+    # Vytvoření slovníku pro politické strany
+    dict_temp = dict.fromkeys(list(range(0, len(w))))
     print(dict_temp)
     n = 0
 
-    #passing all the votes by parti to the dictionary columns
+    # Předání všech hlasů podle stran do sloupců slovníku
     for i in list(range(0, len(titles_city))):
         c = len(w)
-        dict_temp[i] = votes_by_party[n:n+c]
+        dict_temp[i] = votes_by_party[n:n + c]
         n += c
         df_temp = pd.DataFrame(dict_temp)
-        #transform columns vs rows
+        # Převod sloupců na řádky
         df_temp = df_temp.T
 
-    #changing the column names to political parties
+    # Změna názvů sloupců na politické strany
     df_1 = df_1.join(df_temp)
     for i in range(0, len(parties_city)):
         df_1 = df_1.rename(columns={
             i: w.iloc[i][0]
-       })
+        })
 
-    #save to csv
+    # Uložení do CSV
     df_1.to_csv(arg2, index=False, encoding='utf-8')
     print(df_1)
